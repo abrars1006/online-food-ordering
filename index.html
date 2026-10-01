@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en" ng-app="foodOrderApp">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f7f2">
+    <title>Gather &amp; Grain | Online Food Ordering</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="app.js"></script>
+</head>
+
+<body ng-controller="FoodOrderController">
+    <header class="site-header">
+        <a class="brand" href="#menu" ng-click="goTo('menu')" aria-label="Gather and Grain home">
+            <span class="brand-mark" aria-hidden="true">g<span>.</span></span>
+            <span class="brand-name">gather<span>&amp;</span>grain</span>
+        </a>
+        <nav class="main-nav" aria-label="Main navigation">
+            <button type="button" class="nav-link" ng-class="{'is-active': view === 'menu'}"
+                ng-click="goTo('menu')">Menu</button>
+            <button type="button" class="nav-link cart-nav" ng-class="{'is-active': view === 'cart'}"
+                ng-click="goTo('cart')">Your bag <span class="cart-count">{{ getCartCount() }}</span></button>
+            <button type="button" class="nav-checkout" ng-class="{'is-active': view === 'checkout'}"
+                ng-click="goTo('checkout')">Checkout <span aria-hidden="true">↗</span></button>
+        </nav>
+    </header>
+
+    <main class="page-shell" ng-switch="view">
+        <section class="menu-view" ng-switch-when="menu">
+            <div class="hero">
+                <div class="hero-copy">
+                    <p class="eyebrow"><span class="eyebrow-dot"></span> GOOD FOOD, RIGHT ON TIME</p>
+                    <h1>Made with care.<br><span>Delivered with joy.</span></h1>
+                    <p class="hero-description">Comforting favourites and fresh-from-the-kitchen goodness, just a few
+                        clicks away.</p>
+                    <button class="hero-link" type="button" ng-click="scrollToMenu()">Explore the menu <span
+                            aria-hidden="true">↓</span></button>
+                </div>
+                <div class="hero-art" role="img" aria-label="A freshly prepared meal on a table">
+                    <div class="hero-note"><span class="note-icon" aria-hidden="true">✳</span><span>Freshly
+                            made<br><strong>for your table</strong></span></div>
+                    <span class="hero-stamp">GOOD<br>THINGS<br>INSIDE</span>
+                </div>
+            </div>
+
+            <section class="menu-section" id="menu-list" aria-labelledby="menu-heading">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow section-eyebrow">THE GOOD STUFF</p>
+                        <h2 id="menu-heading">Find your new favourite</h2>
+                    </div>
+                    <p class="menu-count">{{ (foods | filter:matchesFood).length }} dishes to love</p>
+                </div>
+                <div class="menu-tools">
+                    <label class="search-box">
+                        <span class="search-icon" aria-hidden="true">⌕</span>
+                        <span class="visually-hidden">Search food by name or category</span>
+                        <input type="search" ng-model="$parent.searchText" placeholder="Search food…"
+                            aria-label="Search food by name or category">
+                        <button type="button" class="clear-search" ng-show="searchText"
+                            ng-click="$parent.searchText = ''" aria-label="Clear search">×</button>
+                    </label>
+                    <div class="category-list" role="group" aria-label="Filter by category">
+                        <button type="button" class="category-chip" ng-repeat="category in categories"
+                            ng-class="{'selected': selectedCategory === category}"
+                            ng-click="selectCategory(category)">{{ category }}</button>
+                    </div>
+                </div>
+                <div class="food-grid" ng-if="(foods | filter:matchesFood).length">
+                    <article class="food-card" ng-repeat="food in foods | filter:matchesFood track by food.id">
+                        <div class="food-photo" ng-class="'photo-' + food.id">
+                            <img ng-src="{{ food.image }}" alt="{{ food.name }}" loading="lazy"
+                                onerror="this.hidden=true; this.nextElementSibling.hidden=false">
+                            <span class="image-fallback" hidden aria-hidden="true">{{ food.icon }}</span>
+                            <span class="availability available" ng-show="food.available"><span
+                                    class="status-dot"></span>Available</span>
+                            <span class="availability unavailable" ng-hide="food.available"><span
+                                    class="status-dot"></span>Sold out</span>
+                        </div>
+                        <div class="food-details">
+                            <div class="food-title-row">
+                                <h3>{{ food.name }}</h3><span class="food-price">{{ food.price | currency:'₹' }}</span>
+                            </div>
+                            <p class="food-category">{{ food.category }}</p>
+                            <p class="food-description">{{ food.description }}</p>
+                            <button class="add-button" type="button" ng-click="addToCart(food)"
+                                ng-disabled="!food.available" ng-class="{'added': food.justAdded}">
+                                <span ng-if="!food.justAdded">{{ food.available ? 'Add to bag' : 'Currently unavailable'
+                                    }}</span>
+                                <span ng-if="food.justAdded">Added to your bag <span aria-hidden="true">✓</span></span>
+                            </button>
+                        </div>
+                    </article>
+                </div>
+                <div class="no-results" ng-if="!(foods | filter:matchesFood).length">
+                    <span aria-hidden="true">⌕</span>
+                    <h3>No dishes found</h3>
+                    <p>Try another search or browse all categories.</p>
+                    <button type="button" class="text-button"
+                        ng-click="$parent.searchText = ''; selectCategory('All')">Clear
+                        filters</button>
+                </div>
+            </section>
+        </section>
+
+        <section class="content-view cart-view" ng-switch-when="cart" aria-labelledby="cart-heading">
+            <div class="page-intro">
+                <p class="eyebrow section-eyebrow">YOUR ORDER</p>
+                <h1 id="cart-heading">Your bag<span class="heading-count">{{ getCartCount() }}</span></h1>
+                <p>All the good things you picked, in one place.</p>
+            </div>
+            <div class="empty-state" ng-if="cart.length === 0">
+                <div class="empty-icon" aria-hidden="true">✳</div>
+                <h2>Your cart is empty</h2>
+                <p>There’s a seat at the table for something delicious.</p><button class="primary-button" type="button"
+                    ng-click="goTo('menu')">Browse food <span aria-hidden="true">↗</span></button>
+            </div>
+            <div class="cart-layout" ng-if="cart.length > 0">
+                <div class="cart-list">
+                    <article class="cart-row" ng-repeat="item in cart track by item.id">
+                        <img class="cart-thumb" ng-src="{{ item.image }}" alt=""
+                            onerror="this.hidden=true; this.nextElementSibling.hidden=false">
+                        <span class="cart-thumb-fallback" hidden aria-hidden="true">{{ item.icon }}</span>
+                        <div class="cart-item-info">
+                            <h2>{{ item.name }}</h2>
+                            <p>{{ item.price | currency:'₹' }} each</p><button class="remove-button" type="button"
+                                ng-click="removeFromCart(item)" aria-label="Remove {{ item.name }}">Remove</button>
+                        </div>
+                        <div class="quantity-control" aria-label="Quantity for {{ item.name }}"><button type="button"
+                                ng-click="changeQuantity(item, -1)" ng-disabled="item.quantity <= 1"
+                                aria-label="Decrease {{ item.name }} quantity">−</button><span>{{ item.quantity
+                                }}</span><button type="button" ng-click="changeQuantity(item, 1)"
+                                aria-label="Increase {{ item.name }} quantity">+</button></div>
+                        <strong class="cart-subtotal">{{ item.price * item.quantity | currency:'₹' }}</strong>
+                    </article>
+                </div>
+                <aside class="order-total">
+                    <p class="eyebrow section-eyebrow">ORDER TOTAL</p>
+                    <div class="total-line"><span>Items ({{ getCartCount() }})</span><span>{{ getTotal() | currency:'₹'
+                            }}</span></div>
+                    <div class="total-line delivery-line"><span>Delivery</span><span>Free</span></div>
+                    <div class="total-divider"></div>
+                    <div class="total-line grand-total"><span>Total</span><strong>{{ getTotal() | currency:'₹'
+                            }}</strong></div><button class="primary-button full-button" type="button"
+                        ng-click="goTo('checkout')">Continue to checkout <span
+                            aria-hidden="true">↗</span></button><button class="text-button back-menu" type="button"
+                        ng-click="goTo('menu')">← Keep browsing</button>
+                </aside>
+            </div>
+        </section>
+
+        <section class="content-view checkout-view" ng-switch-when="checkout" aria-labelledby="checkout-heading">
+            <div class="page-intro">
+                <p class="eyebrow section-eyebrow">ALMOST THERE</p>
+                <h1 id="checkout-heading">Make it yours</h1>
+                <p>A few details, then we’ll get cooking.</p>
+            </div>
+            <div class="empty-state" ng-if="cart.length === 0">
+                <div class="empty-icon" aria-hidden="true">✳</div>
+                <h2>Your cart is empty</h2>
+                <p>Choose something delicious before heading to checkout.</p><button class="primary-button"
+                    type="button" ng-click="goTo('menu')">Browse food <span aria-hidden="true">↗</span></button>
+            </div>
+            <div class="checkout-layout" ng-if="cart.length > 0">
+                <form name="checkoutForm" id="checkoutForm" class="customer-form" ng-submit="placeOrder(checkoutForm)"
+                    novalidate>
+                    <h2>Your details</h2>
+                    <div class="form-grid">
+                        <label class="form-field full-field">Full name<input type="text" name="fullName"
+                                ng-model="checkout.fullName" placeholder="e.g. Aditi Sharma" required ng-minlength="2"
+                                autocomplete="name"><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.fullName.$touched) && checkoutForm.fullName.$error.required">Please
+                                enter
+                                your name.</span><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.fullName.$touched) && checkoutForm.fullName.$error.minlength">Name
+                                must be
+                                at least 2 characters.</span></label>
+                        <label class="form-field">Email address<input type="email" name="email"
+                                ng-model="checkout.email" placeholder="you@example.com" required
+                                autocomplete="email"><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.email.$touched) && checkoutForm.email.$error.required">Please
+                                enter
+                                your email.</span><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.email.$touched) && checkoutForm.email.$error.email">Enter
+                                a valid email
+                                address.</span></label>
+                        <label class="form-field">Phone number<input type="tel" name="phone" ng-model="checkout.phone"
+                                placeholder="10-digit mobile number" ng-pattern="/^[6-9][0-9]{9}$/" required
+                                maxlength="10" inputmode="numeric" autocomplete="tel"><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.phone.$touched) && checkoutForm.phone.$error.required">Please
+                                enter
+                                your phone number.</span><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.phone.$touched) && checkoutForm.phone.$error.pattern">Enter
+                                a valid
+                                10-digit Indian mobile number.</span></label>
+                        <label class="form-field full-field">Delivery address<textarea name="address"
+                                ng-model="checkout.address" placeholder="House number, street and area" rows="3"
+                                required autocomplete="street-address"></textarea><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.address.$touched) && checkoutForm.address.$error.required">Please
+                                enter
+                                your delivery address.</span></label>
+                        <label class="form-field full-field">City<input type="text" name="city" ng-model="checkout.city"
+                                placeholder="e.g. Bengaluru" required autocomplete="address-level2"><span
+                                class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.city.$touched) && checkoutForm.city.$error.required">Please
+                                enter your
+                                city.</span></label>
+                        <label class="form-field">Password<input type="password" name="password"
+                                ng-model="checkout.password" placeholder="At least 8 characters" ng-minlength="8"
+                                required autocomplete="new-password"><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.password.$touched) && checkoutForm.password.$error.required">Please
+                                create
+                                a password.</span><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.password.$touched) && checkoutForm.password.$error.minlength">Use
+                                at least
+                                8 characters.</span></label>
+                        <label class="form-field">Confirm password<input type="password" name="confirmPassword"
+                                ng-model="checkout.confirmPassword" placeholder="Repeat your password"
+                                ng-pattern="checkout.password" required autocomplete="new-password"><span
+                                class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.confirmPassword.$touched) && checkoutForm.confirmPassword.$error.required">Please
+                                confirm your password.</span><span class="field-error"
+                                ng-show="(checkoutForm.$submitted || checkoutForm.confirmPassword.$touched) && checkoutForm.confirmPassword.$error.pattern">Passwords
+                                do not match.</span></label>
+                    </div>
+                    <p class="form-note">Your details are used only for this front-end order simulation.</p>
+                    <p class="form-note valid-note" ng-show="checkoutForm.$valid">All details look good. Your order is
+                        ready to place.</p>
+                </form>
+                <aside class="order-total summary-panel">
+                    <p class="eyebrow section-eyebrow">YOUR ORDER</p>
+                    <h2>Order summary</h2>
+                    <div class="summary-items">
+                        <div class="summary-item" ng-repeat="item in cart track by item.id"><span>{{ item.name }}
+                                <small>× {{ item.quantity }}</small></span><span>{{ item.price * item.quantity |
+                                currency:'₹' }}</span></div>
+                    </div>
+                    <div class="total-line delivery-line"><span>Delivery</span><span>Free</span></div>
+                    <div class="total-divider"></div>
+                    <div class="total-line grand-total"><span>Final total</span><strong>{{ getTotal() | currency:'₹'
+                            }}</strong></div><button class="primary-button full-button" type="submit"
+                        form="checkoutForm" ng-disabled="checkoutForm.$invalid">Place order <span
+                            aria-hidden="true">↗</span></button>
+                    <p class="summary-footnote">No payment is collected. This is a student project demo.</p>
+                </aside>
+            </div>
+        </section>
+
+        <section class="success-view" ng-switch-when="success" aria-labelledby="success-heading">
+            <div class="success-mark" aria-hidden="true"><span>✓</span></div>
+            <p class="eyebrow section-eyebrow">THAT’S A WRAP</p>
+            <h1 id="success-heading">Order placed<br><span>successfully!</span></h1>
+            <p class="success-copy">Thanks, {{ placedOrder.customer.fullName }}. Your kitchen favourites are being
+                prepared with care.</p>
+            <div class="success-details">
+                <div><span>Order ID</span><strong>{{ placedOrder.id }}</strong></div>
+                <div><span>Order total</span><strong>{{ placedOrder.total | currency:'₹' }}</strong></div>
+                <div><span>Delivering to</span><strong>{{ placedOrder.customer.city }}</strong></div>
+            </div>
+            <p class="delivery-estimate"><span aria-hidden="true">◷</span> Your food will arrive in approximately
+                <strong>30–40 minutes.</strong>
+            </p><button class="primary-button" type="button" ng-click="backToMenu()">Back to menu <span
+                    aria-hidden="true">↗</span></button>
+        </section>
+    </main>
+    <footer class="site-footer"><a class="footer-brand" href="#menu"
+            ng-click="goTo('menu')">gather<span>&amp;</span>grain</a>
+        <p>Made with care. Served with a smile.</p><span class="footer-note">A student project demo <span
+                aria-hidden="true">✳</span></span>
+    </footer>
+</body>
+
+</html>
